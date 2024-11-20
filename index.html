@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- displays site properly based on user's device -->
+    <script src="https://unpkg.com/alpinejs@3.x.x" defer></script>
+    <link rel="stylesheet" href="./style.css" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="./assets/images/favicon-32x32.png"
+    />
+
+    <title>Frontend Mentor | Product list with cart</title>
+
+    <!-- Feel free to remove these styles or customise in your own stylesheet 👍 -->
+    <style>
+      .attribution {
+        font-size: 11px;
+        text-align: center;
+      }
+      .attribution a {
+        color: hsl(228, 45%, 44%);
+      }
+
+      :root {
+        background-color: #fcf8f5;
+      }
+    </style>
+  </head>
+  <body>
+    <div x-data="productList()" x-init="loadProducts" class="container">
+      <div>
+        <h1 class="title">Desserts</h1>
+        <div class="product-list__container">
+          <!-- Контейнер для продуктов -->
+          <template x-for="product in products" :key="product.name">
+            <div class="product-card">
+              <img
+                x-bind:src="product.image.desktop"
+                alt="dessert_image"
+                :class="productsInCart.find(item => item.name === product.name) ? 'product__image active-border' : 'product__image'"
+
+              />
+              <button
+                x-show="!productsInCart.find(item => item.name == product.name)"
+                @click="addToCart(product)"
+                class="add-to-cart__btn"
+              >
+                <div class="add-to-cart__btn_container">
+                  <img
+                    src="./assets/images/icon-add-to-cart.svg"
+                    alt="Add to cart icon"
+                    width="17"
+                    height="17"
+                    class="add-to-cart__cart_icon"
+                  />
+                  <span class="add-to-cart__btn_text">Add to cart</span>
+                </div>
+              </button>
+              <button
+                class="add-to-cart__btn_active"
+                x-show="productsInCart.find(item => item.name === product.name)"
+              >
+                <div class="add-to-cart__container_active">
+                  <div
+                    @click="decrementQuantity(product)"
+                    class="add-to-cart__btn-icon-wrapper"
+                  >
+                    <img
+                      src="./assets/images/icon-decrement-quantity.svg"
+                      class="add-to-cart__btn-icon_decrement"
+                    />
+                  </div>
+                  <span x-text="totalItem(product)"></span>
+                  <div
+                    @click="incrementQuantity(product)"
+                    class="add-to-cart__btn-icon-wrapper"
+                  >
+                    <img
+                      src="./assets/images/icon-increment-quantity.svg"
+                      class="add-to-cart__btn-icon_decrement"
+                    />
+                  </div>
+                </div>
+              </button>
+              <div class="product__info-container">
+                <span class="product__category" x-text="product.category"></span>
+                <h2 class="product__name" x-text="product.name"></h2>
+                <span class="product__price"
+                  >$ <span x-text="product.price.toFixed(2)"></span
+                ></span>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+      <div class="cart__container">
+        <h2 class="cart__title">
+          Your Cart (<span x-text="totalItems()"></span>)
+        </h2>
+        <div class="cart__empty_container" x-show="productsInCart.length === 0">
+          <img
+            class="cart__empty-icon"
+            src="./assets/images/illustration-empty-cart.svg"
+            alt="Empty cart icon"
+          />
+          <span class="cart__empty-title"
+            >Your added items will appear here</span
+          >
+        </div>
+        <div x-show="productsInCart.length > 0">
+        <div class="cart__items-container" >
+          <template x-for="product in productsInCart" :key="product.name">
+            <div class="cart__item">
+              <div class="cart__item-info">
+                <span class="cart__item-name" x-text="product.name"></span>
+                <div class="cart__item-quantity-price_container">
+                <span class="cart__item-quantity" x-text="`${product.quantity}x`"></span>
+                <span class="cart__item-preprice">@</span>
+                <span class="cart__item-price"
+                > $<span x-text="product.price.toFixed(2)"></span> 
+                <span class="cart__item-total-price" x-text="`$${totalPrice(product)}`"></span>
+                <div class="cart_underline" />
+                <img src="./assets/images/icon-remove-item.svg" class="cart__item-remove" @click="removeItem(product)"/>
+              </div>
+            </div>
+            </template>
+          </template>
+        </div>
+        <div class="cart__total-container" >
+          <span class="cart__total-title">Order Total</span>
+          <span class="cart__total-price"
+            >$<span x-text="totalAllPrices().toFixed(2)"></span>
+          </span>
+        </div>
+        <div class="cart-delivery__container" >
+          <img src="./assets/images/icon-carbon-neutral.svg" />
+          <div><span>This is a </span>
+          <span class="cart-delivery-bold__title">carbon-neutral</span>
+          <span>delivery</span> 
+        </div>
+      </div>
+      <button class="cart-confirm-order__btn" @click="isModalShow = true">
+        Confirm Order
+      </button>
+    </div>
+      </div>
+      <div class="modal-confirm" x-show="isModalShow">
+        <div class="modal-confirm__container">
+          <img src="./assets/images/icon-order-confirmed.svg" />
+          <h2 class="order-confrimed__title">Order Confirmed</h2>
+          <span class="modal-confirm-thanks__text">We hope you enjoy your food!</span>
+          <div>
+            <div class="modal-confirm__items-container">
+              <template x-for="product in productsInCart" :key="product.name">
+                <div class="modal-confirm__item"> 
+                  <div class="modal-confirm__item-info">
+                    <img x-bind:src="product.image.desktop" class="modal-confirm__image" />
+                    <div class="modal-confirm__item-name-price">
+                      <span class="modal-confirm__item-name" x-text="product.name"></span>
+                      <div>
+                      <span class="cart__item-quantity" x-text="`${product.quantity}x`"></span>
+                      <span class="cart__item-preprice">@</span>
+                      <span class="cart__item-price" x-text=`$${product.price.toFixed(2)}`></span> 
+                    </div>
+                    </div>
+                </div>
+                <span x-text=`$${totalPrice(product)}` class="modal-confirm__item-total-price"></span>
+              </div>
+              </template>
+              <div class="modal-confirm__order-total_container">
+                <span class="modal-confirm__order-total-title">Order Total</span>
+                <span x-text=`$${totalAllPrices().toFixed(2)}` class="modal-confirm__total-price"></span>
+              </div>
+              <button class="modal-confirm__btn-start-new-order">Start New Order</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // Определяем функцию для Alpine.js
+      function productList() {
+        return {
+          isModalShow: false,
+          products: [], // начальное пустое состояние списка продуктов
+          productsInCart: [], // Состояние корзины
+          async loadProducts() {
+            const response = await fetch("./data.json"); // загружаем данные из data.json
+            this.products = await response.json(); // сохраняем данные в products
+            console.log(this.products);
+          },
+          removeItem(product) {
+            this.productsInCart = this.productsInCart.filter(
+              (item) => item.name !== product.name
+            )
+          },
+          totalItems() {
+            return this.productsInCart.reduce(
+              (total, item) => total + item.quantity,
+              0
+            );
+          },
+          totalPrice(product) {
+  return (product.price * product.quantity).toFixed(2);
+}
+,
+          totalItem(product) {
+            const cartItem = this.productsInCart.find(
+              (item) => item.name === product.name
+            );
+            return cartItem ? cartItem.quantity : 0; // Если товар найден, вернуть количество; иначе 0
+          },
+          totalAllPrices(){
+            return this.productsInCart.reduce(
+              (total, item) => total + item.price * item.quantity,
+              0
+            );
+          },
+          addToCart(product) {
+            const cartItem = this.productsInCart.find(
+              (item) => item.name === product.name
+            );
+            if (cartItem) {
+              cartItem.quantity++;
+            } else {
+              this.productsInCart.push({ ...product, quantity: 1 });
+            }
+            console.log(this.productsInCart);
+          },
+          incrementQuantity(product) {
+            const cartItem = this.productsInCart.find(
+              (item) => item.name === product.name
+            );
+            if (cartItem) {
+              cartItem.quantity++;
+            }
+          },
+          decrementQuantity(product) {
+            const cartItem = this.productsInCart.find(
+              (item) => item.name === product.name
+            );
+            if (cartItem) {
+              cartItem.quantity--;
+              if (cartItem.quantity === 0) {
+                this.productsInCart = this.productsInCart.filter(
+                  (item) => item.name !== product.name
+                );
+              }
+            }
+          },
+        };
+      }
+    </script>
+  </body>
+</html>
